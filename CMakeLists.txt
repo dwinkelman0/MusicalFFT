@@ -1,15 +1,19 @@
 # Place all code in ./src
 # Build from ./build using cmake ..
 
+# Environment configurations
 cmake_minimum_required (VERSION 3.10)
-project (MusicalFFT)
 set (CMAKE_BUILD_TYPE Release)
+set (CMAKE_CXX_STANDARD 11)
 
+# Project configurations
+project (MusicalFFT)
 set (MusicalFFT_VERSION_MAJOR 0)
 set (MusicalFFT_VERSION_MINOR 0)
 set (TargetName_MusicalFFT musicalfft)
 set (TargetName_Tests ${TargetName_MusicalFFT}-tests)
 
+# Include project headers
 include_directories (include)
 
 # Build a linked library

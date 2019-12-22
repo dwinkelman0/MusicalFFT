@@ -1,9 +1,11 @@
-#include <opencl.h>
+#include "opencl_fixture.h"
 
 #include <gtest/gtest.h>
 
+#include <stdexcept>
 
-TEST(OpenCLTest, ContextCreation)
+
+TEST_F(OpenCLTest, BasicContext)
 {
-	createContext();
+	
 }
