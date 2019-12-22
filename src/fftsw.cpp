@@ -66,12 +66,12 @@ void fft_sw(const float* data, const uint32_t n_samples, complex_t* output)
 
 void dft_sw(const float* data, const uint32_t n_samples, complex_t* output)
 {
-	for (int i = 0; i < n_samples/2; ++i)
+	for (int i = 0; i < n_samples / 2; ++i)
     {
         complex_t sum = 0;
         for (int j = 0; j < n_samples; ++j)
         {
-            complex_t rotation = 1i * j * i * (2*M_PI/n_samples);
+            complex_t rotation = 1i * j * i * (2*M_PI / n_samples);
             sum += data[j] * std::exp(rotation);
         }
         output[i] = sum;

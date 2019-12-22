@@ -20,7 +20,7 @@ add_library(${TargetName_MusicalFFT} SHARED ${MUSICALFFT_SOURCES})
 # https://stackoverflow.com/questions/3897839/how-to-link-c-program-with-boost-using-cmake
 find_package(Boost 1.65 COMPONENTS program_options REQUIRED)
 include_directories(${Boost_INCLUDE_DIR})
-target_link_libraries(${TargetName_MusicalFFT} LINK_PUBLIC ${Boost_LIBRARIES})
+target_link_libraries(${TargetName_MusicalFFT} LINK_PUBLIC ${Boost_LIBRARIES} libOpenCL.so)
 
 # Unit tests
 include(GoogleTest)
