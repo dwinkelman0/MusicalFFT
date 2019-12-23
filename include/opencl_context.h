@@ -3,6 +3,7 @@
 
 #include <CL/cl.h>
 
+#include <string>
 #include <vector>
 
 
@@ -13,12 +14,12 @@ class OpenCLContext;
 static void checkError(const cl_int err, const char* message);
 
 
-class OpenCLQueue
+class OpenCLDevice
 {
 public:
-	OpenCLQueue(const cl_device_id device_id, cl_context ctx);
+	OpenCLDevice(const cl_device_id device_id, cl_context ctx);
 
-	~OpenCLQueue();
+	~OpenCLDevice();
 
 protected:
 	cl_context ctx;
@@ -36,9 +37,19 @@ public:
 	/*! Destructor */
 	~OpenCLContext();
 
+	cl_kernel createKernel(const std::string& kernel_name, const std::string& file_name);
+
+
+protected:
+	cl_kernel compileKernelFromSource(const std::string& kernel_name, const std::string& file_path);
+
+	cl_kernel loadKernelFromBinary(const std::string& kernel_name, const std::string& file_path);
+
 protected:
 	cl_context ctx;
-	std::vector<OpenCLQueue> queues;
+	std::vector<OpenCLDevice> queues;
+	cl_uint n_devices;
+	cl_device_id* device_ids;
 };
 
 

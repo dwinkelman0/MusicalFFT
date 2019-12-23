@@ -5,6 +5,7 @@
 cmake_minimum_required (VERSION 3.10)
 set (CMAKE_BUILD_TYPE Release)
 set (CMAKE_CXX_STANDARD 11)
+add_definitions(-DBOOST_NO_CXX11_SCOPED_ENUMS)
 
 # Project configurations
 project (MusicalFFT)
@@ -22,7 +23,7 @@ add_library(${TargetName_MusicalFFT} SHARED ${MUSICALFFT_SOURCES})
 
 # Link to Boost
 # https://stackoverflow.com/questions/3897839/how-to-link-c-program-with-boost-using-cmake
-find_package(Boost 1.65 COMPONENTS program_options REQUIRED)
+find_package(Boost 1.65 COMPONENTS program_options filesystem system REQUIRED)
 include_directories(${Boost_INCLUDE_DIR})
 target_link_libraries(${TargetName_MusicalFFT} LINK_PUBLIC ${Boost_LIBRARIES} libOpenCL.so)
 

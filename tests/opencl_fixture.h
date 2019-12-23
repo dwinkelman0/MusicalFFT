@@ -1,7 +1,7 @@
 #ifndef _TEST_OPENCL_FIXTURE_H_
 #define _TEST_OPENCL_FIXTURE_H_
 
-#include <opencl.h>
+#include <opencl_context.h>
 
 #include <gtest/gtest.h>
 
