@@ -159,11 +159,29 @@ cl_kernel OpenCLContext::compileKernelFromSource(const std::string& kernel_name,
     const size_t lengths[1] = { src.length() };
     cl_program program = clCreateProgramWithSource(ctx, 1, srcs, lengths, &err);
     checkError(err, "clCreateProgramWithSource");
-    
+
     // Compile program
     const char* options = "";
     err = clBuildProgram(program, n_devices, device_ids, options, NULL, NULL);
-    checkError(err, "clBuildProgram");
+    try
+    {
+        checkError(err, "clBuildProgram");
+    }
+    catch (std::runtime_error e)
+    {
+        if (err == CL_BUILD_PROGRAM_FAILURE)
+        {
+            cl_ulong n_written = 0;
+            clGetProgramBuildInfo(program, device_ids[0], CL_PROGRAM_BUILD_LOG, 0, nullptr, &n_written);
+
+            char* buffer = new char[n_written + 5];
+            clGetProgramBuildInfo(program, device_ids[0], CL_PROGRAM_BUILD_LOG, n_written + 5, buffer, nullptr);
+            std::cerr << "Program build info:" << std::endl << buffer << std::endl;
+            delete[] buffer;
+
+            throw std::runtime_error("Program build failed");
+        }
+    }
     
     // Create kernel
     cl_kernel kernel = clCreateKernel(program, kernel_name.c_str(), &err);
