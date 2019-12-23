@@ -33,9 +33,33 @@ OpenCLDevice::~OpenCLDevice()
 }
 
 
+uint32_t OpenCLDevice::getLocalMemorySize()
+{
+    size_t result = 0;
+    clGetDeviceInfo(device, CL_DEVICE_LOCAL_MEM_SIZE, sizeof(size_t), &result, nullptr);
+    return result;
+}
+
+
+uint32_t OpenCLDevice::getMaxWorkGroupSize()
+{
+    size_t result = 0;
+    clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(size_t), &result, nullptr);
+    return result;
+}
+
+
+uint32_t OpenCLDevice::getMaxComputeUnits()
+{
+    size_t result = 0;
+    clGetDeviceInfo(device, CL_DEVICE_MAX_COMPUTE_UNITS, sizeof(size_t), &result, nullptr);
+    return result;
+}
+
+
 OpenCLContext::OpenCLContext() :
     ctx(nullptr),
-    queues(),
+    devices(),
     n_devices(0),
     device_ids(nullptr)
 {
@@ -87,7 +111,7 @@ OpenCLContext::OpenCLContext() :
     // Create a queue for each device
     for (cl_uint i = 0; i < n_devices; ++i)
     {
-        queues.push_back(OpenCLDevice(device_ids[i], ctx));
+        devices.push_back(new OpenCLDevice(device_ids[i], ctx));
     }
 }
 

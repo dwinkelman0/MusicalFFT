@@ -21,6 +21,10 @@ public:
 
 	~OpenCLDevice();
 
+	uint32_t getLocalMemorySize();
+	uint32_t getMaxWorkGroupSize();
+	uint32_t getMaxComputeUnits();
+
 protected:
 	cl_context ctx;
 	cl_device_id device;
@@ -39,6 +43,11 @@ public:
 
 	cl_kernel createKernel(const std::string& kernel_name, const std::string& file_name);
 
+	std::vector<OpenCLDevice*> getDevices() const
+	{
+		return devices;
+	}
+
 
 protected:
 	cl_kernel compileKernelFromSource(const std::string& kernel_name, const std::string& file_path);
@@ -47,7 +56,7 @@ protected:
 
 protected:
 	cl_context ctx;
-	std::vector<OpenCLDevice> queues;
+	std::vector<OpenCLDevice*> devices;
 	cl_uint n_devices;
 	cl_device_id* device_ids;
 };
