@@ -7,6 +7,8 @@
 #include <vector>
 
 
+class OpenCLMemory;
+class OpenCLDevice;
 class OpenCLContext;
 
 
@@ -14,12 +16,34 @@ class OpenCLContext;
 static void checkError(const cl_int err, const char* message);
 
 
+class OpenCLMemory
+{
+public:
+	OpenCLMemory(const size_t size, OpenCLDevice* device);
+
+	~OpenCLMemory();
+
+	void write(const uint8_t* data, const size_t n_data);
+
+	void read(const size_t n_buffer, uint8_t* buffer, size_t* n_read);
+
+protected:
+	cl_mem mem_handle;
+	size_t size;
+	OpenCLDevice* device;
+};
+
+
 class OpenCLDevice
 {
+	friend class OpenCLMemory;
+
 public:
 	OpenCLDevice(const cl_device_id device_id, cl_context ctx);
 
 	~OpenCLDevice();
+
+	OpenCLMemory* newMemory(const size_t size);
 
 	uint32_t getLocalMemorySize();
 	uint32_t getMaxWorkGroupSize();
@@ -34,6 +58,8 @@ protected:
 
 class OpenCLContext
 {
+	friend class OpenCLDevice;
+
 public:
 	/*! Create an OpenCL context with a GPU */
 	OpenCLContext();

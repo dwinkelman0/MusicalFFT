@@ -16,6 +16,44 @@ void checkError(cl_int err, const char * message) {
 }
 
 
+OpenCLMemory::OpenCLMemory(const size_t size, OpenCLDevice* device) :
+    mem_handle(nullptr),
+    size(size),
+    device(device)
+{
+    cl_int err = 0;
+    mem_handle = clCreateBuffer(device->ctx, CL_MEM_READ_WRITE, size, nullptr, &err);
+    checkError(err, "clCreateBuffer");
+}
+
+
+OpenCLMemory::~OpenCLMemory()
+{
+    // TODO: address release
+}
+
+
+void OpenCLMemory::write(const uint8_t* data, const size_t n_data)
+{
+    size_t write_size = size < n_data ? size : n_data;
+
+    cl_uint err;
+    err = clEnqueueWriteBuffer(device->cmdq, mem_handle, CL_TRUE, 0, write_size, data, 0, nullptr, nullptr);
+    checkError(err, "clEnqueueWriteBuffer");
+}
+
+
+void OpenCLMemory::read(const size_t n_buffer, uint8_t* buffer, size_t* n_read)
+{
+    size_t read_size = n_buffer < size ? n_buffer : size;
+    *n_read = read_size;
+
+    cl_uint err;
+    err = clEnqueueReadBuffer(device->cmdq, mem_handle, CL_TRUE, 0, read_size, buffer, 0, nullptr, nullptr);
+    checkError(err, "clEnqueueReadBuffer");
+}
+
+
 OpenCLDevice::OpenCLDevice(const cl_device_id device_id, cl_context ctx) :
     device(device_id),
     ctx(ctx),
@@ -30,6 +68,12 @@ OpenCLDevice::OpenCLDevice(const cl_device_id device_id, cl_context ctx) :
 OpenCLDevice::~OpenCLDevice()
 {
     // TODO: address release
+}
+
+
+OpenCLMemory* OpenCLDevice::newMemory(const size_t size)
+{
+    return new OpenCLMemory(size, this);
 }
 
 
@@ -118,7 +162,11 @@ OpenCLContext::OpenCLContext() :
 
 OpenCLContext::~OpenCLContext()
 {
-    // TODO: address release
+    for (std::vector<OpenCLDevice*>::iterator it = devices.begin(); it < devices.end(); ++it)
+    {
+        delete *it;
+        *it = nullptr;
+    }
 }
 
 
