@@ -49,6 +49,7 @@ void OpenCLMemory::read(const size_t n_buffer, uint8_t* buffer, size_t* n_read)
     *n_read = read_size;
 
     cl_uint err;
+    std::cout << "Read " << read_size << std::endl;
     err = clEnqueueReadBuffer(device->cmdq, mem_handle, CL_TRUE, 0, read_size, buffer, 0, nullptr, nullptr);
     checkError(err, "clEnqueueReadBuffer");
 }

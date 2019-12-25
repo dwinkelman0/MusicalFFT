@@ -13,7 +13,7 @@ class OpenCLContext;
 
 
 /*! Validate OpenCL errors after each operation; throws if fatal */
-static void checkError(const cl_int err, const char* message);
+void checkError(const cl_int err, const char* message);
 
 
 class OpenCLMemory
@@ -26,6 +26,11 @@ public:
 	void write(const uint8_t* data, const size_t n_data);
 
 	void read(const size_t n_buffer, uint8_t* buffer, size_t* n_read);
+
+	cl_mem getHandle() const
+	{
+		return mem_handle;
+	}
 
 protected:
 	cl_mem mem_handle;
@@ -48,6 +53,11 @@ public:
 	uint32_t getLocalMemorySize();
 	uint32_t getMaxWorkGroupSize();
 	uint32_t getMaxComputeUnits();
+
+	cl_command_queue getCommandQueue() const
+	{
+		return cmdq;
+	}
 
 protected:
 	cl_context ctx;

@@ -30,12 +30,13 @@ float2 cmult(float2 c1, float2 c2)
  *  each musical note, that are spaced according to an exponential scale
  *  starting at base_note_freq
  */
-__kernel void musical_fft(float data_freq, unsigned int n_data, __global __read_only float* data, float base_note_freq, __global __write_only float* output_mem)
+__kernel void musical_fft(float data_freq, unsigned int n_data, __global float* data, float base_note_freq, __global float* output)
 {
 	// Each workgroup is responsible for a given chunk
-	unsigned int chunk_size = n_data / get_num_groups(0);
 	unsigned int chunk_id = get_group_id(0);
+	unsigned int chunk_size = n_data / get_num_groups(0);
 	unsigned int data_offset = chunk_size * chunk_id;
+	unsigned int output_offset = chunk_id * FFT_SIZE * 6;
 
 	// Each workitem is responsible for one pair in each stage
 	unsigned int j = get_local_id(0);
@@ -103,7 +104,6 @@ __kernel void musical_fft(float data_freq, unsigned int n_data, __global __read_
 		temp_output_mem[j] = length(fft_mem[j]);
 
 		// Copy to global memory
-		unsigned int output_offset = note_id * FFT_SIZE;
-		temp_output_mem_copy = async_work_group_copy(output_mem + output_offset, temp_output_mem, FFT_SIZE / 2, 0);
+		temp_output_mem_copy = async_work_group_copy(output + output_offset + note_id * FFT_SIZE, temp_output_mem, FFT_SIZE / 2, 0);
 	}
 }

@@ -1,13 +1,16 @@
 #include "opencl_fixture.h"
 
+#include <ffthw.h>
+
 #include <gtest/gtest.h>
 
+#include <math.h>
 #include <stdexcept>
 
 
 TEST_F(OpenCLTest, BasicContext)
 {
-	cl_kernel kernel = ctx->createKernel("vector_add", "../kernels/vector_add.cl");
+	EXPECT_NO_THROW(ctx->createKernel("vector_add", "../kernels/vector_add.cl"));
 }
 
 
@@ -45,7 +48,25 @@ TEST_F(OpenCLTest, MemoryReadWrite)
 }
 
 
-TEST_F(OpenCLTest, FFT)
+TEST_F(OpenCLTest, MusicalFFT)
 {
-	cl_kernel kernel = ctx->createKernel("musical_fft", "../kernels/musical_fft.cl");
+	const float data_freq = 44100;
+	const uint32_t n_data = 44101;
+	const float base_note_freq = 110; // A2
+
+	// Generate a signal for a C#3 (and some overtones)
+	float* data = new float[n_data];
+	float note_freq = 138.59;
+	for (int i = 0; i < n_data; ++i)
+	{
+		float sum = 0;
+		for (int j = 1; j <= 16; ++j)
+		{
+			sum += sin(i / data_freq * 2*M_PI * note_freq * j) / j;
+		}
+		data[i] = sum;
+	}
+
+	size_t n_output = 0;
+	float* output = musical_fft_hw(ctx, data_freq, n_data, data, base_note_freq, 100, &n_output);
 }
