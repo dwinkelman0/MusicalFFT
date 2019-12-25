@@ -1,4 +1,5 @@
 #define FFT_SIZE 1024
+#define N_STAGES 10
 
 
 /*! Compute a complex root of unity */
@@ -57,7 +58,7 @@ __kernel void musical_fft(__global float* signal, float samples_per_chunk, float
 
 	for (unsigned int note_id = 0; note_id < 12; ++note_id)
 	{
-		for (int i = 0; i < 2; ++i)
+		for (unsigned int i = 0; i < 2; ++i)
 		{
 			float samples_per_fft_slot = (samples_per_base_note / pow(2, (float)note_id / 12)) / FFT_SIZE;
 			float rel_pos = begin + (2 * j + i) * samples_per_fft_slot - begin_index;
@@ -69,8 +70,31 @@ __kernel void musical_fft(__global float* signal, float samples_per_chunk, float
 		// Synchronize before performing FFT
 		work_group_barrier(CLK_LOCAL_MEM_FENCE);
 
-		// Transfer results to output buffer
+		// Perform the FFT algorithm
+		for (unsigned int stage = 0; stage < N_STAGES; ++stage)
+		{
+			unsigned int n_universes = FFT_SIZE >> (stage + 1);
+			unsigned int n_pairs = 1 << stage;
+			unsigned int exp_spacing = N_STAGES - (stage + 1);
+
+			unsigned int k = j % n_pairs;
+			unsigned int u = j / n_pairs;
+
+			float2 even = fft_mem[(u << stage) + k];
+			float2 odd = cmult(fft_mem[((u + n_universes) << stage) + k], cexp(k * 2*M_PI_F / (1 << (stage + 1))));
+
+			work_group_barrier(CLK_LOCAL_MEM_FENCE);
+
+			fft_mem[(u << (stage + 1)) + k] = even + odd;
+			fft_mem[(u << (stage + 1)) + k + n_pairs] = even - odd;
+
+			//work_group_barrier(CLK_LOCAL_MEM_FENCE);
+		}
+
+		// Transfer results to output buffer and synchronize before copying
 		fft_output[j] = length(fft_mem[j]);
+		work_group_barrier(CLK_LOCAL_MEM_FENCE);
+
 
 		if (note_id != 0)
 		{

@@ -78,4 +78,9 @@ TEST_F(OpenCLTest, MusicalFFT)
 
 	OpenCLReadOnlyMemory* mem = musical_fft_hw(ctx, data_freq, n_data, data, 220, base_note_freq);
 	const float* output = reinterpret_cast<const float*>(mem->read());
+
+	for (int i = 0; i < 512; ++i)
+	{
+		std::cout << note_freq*i << " Hz: " << output[2048 + i] << std::endl;
+	}
 }
