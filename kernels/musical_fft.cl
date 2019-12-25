@@ -30,80 +30,53 @@ float2 cmult(float2 c1, float2 c2)
  *  each musical note, that are spaced according to an exponential scale
  *  starting at base_note_freq
  */
-__kernel void musical_fft(float data_freq, unsigned int n_data, __global float* data, float base_note_freq, __global float* output)
+__kernel void musical_fft(__global float* signal, float samples_per_chunk, float samples_per_base_note, __local float* signal_chunk, __global float* output)
 {
-	// Each workgroup is responsible for a given chunk
+	// Determine which portion of the signal to use
 	unsigned int chunk_id = get_group_id(0);
-	unsigned int chunk_size = n_data / get_num_groups(0);
-	unsigned int data_offset = chunk_size * chunk_id;
-	unsigned int output_offset = chunk_id * FFT_SIZE * 6;
+	float begin = chunk_id * samples_per_chunk;
+	unsigned int begin_index = (unsigned int)floor(begin);
 
-	// Each workitem is responsible for one pair in each stage
+	// Determine which portion of the output to use
+	event_t output_copy;
+	unsigned int big_output_offset = chunk_id * FFT_SIZE * 6;
+
+	// Get index of workitem
 	unsigned int j = get_local_id(0);
 
-	// Allocate local memory for each workgroup and copy chunk
-	__local float sig_mem[FFT_SIZE + 1];
-	event_t initial_copy = async_work_group_copy(sig_mem, data + data_offset, chunk_size + 1, 0);
-	wait_group_events(1, &initial_copy);
-
-	// Allocate local memory for computing an FFT
+	// Local memory for performing the FFT
+	event_t chunk_copy;
 	__local float2 fft_mem[FFT_SIZE];
 
-	// Allocate local memory for buffering the results
-	__local float temp_output_mem[FFT_SIZE / 2];
-	event_t temp_output_mem_copy;
+	// Local memory for storing the output of the FFT
+	__local float fft_output[FFT_SIZE / 2];
 
-	// Iterate through each note
+	// Cache the relevant portion of the signal into local memory
+	chunk_copy = async_work_group_copy(signal_chunk, signal + (unsigned int)floor(begin), (unsigned int)floor(samples_per_base_note + 2), 0);
+	wait_group_events(1, &chunk_copy);
+
 	for (unsigned int note_id = 0; note_id < 12; ++note_id)
 	{
-		// Determine how many samples are in a note's cycle
-		float note_freq = base_note_freq * pow(2, note_id / 12.0f);
-		float samples_per_cycle = data_freq / note_freq;
-		float samples_per_fft_slot = samples_per_cycle / FFT_SIZE;
-
-		// Interpolate from the original signal into the FFT memory
-		for (unsigned int i = 0; i < 2; ++i)
+		for (int i = 0; i < 2; ++i)
 		{
-			float data_index = (j * 2 + i + 0.5) * samples_per_fft_slot;
-			float weight_lo = ceil(data_index) - data_index;
-			float weight_hi = 1 - weight_lo;
-			fft_mem[j * 2 + i] = (float2)(weight_lo * sig_mem[(unsigned int)floor(data_index)] + weight_hi * sig_mem[(unsigned int)ceil(data_index)], 0);
+			float samples_per_fft_slot = (samples_per_base_note / pow(2, (float)note_id / 12)) / FFT_SIZE;
+			float rel_pos = begin + (2 * j + i) * samples_per_fft_slot - begin_index;
+			float weight_hi = rel_pos - floor(rel_pos);
+			float weight_lo = 1 - weight_hi;
+			fft_mem[j * 2 + i] = (float2)(weight_lo * signal_chunk[(unsigned int)floor(rel_pos)] + weight_hi * signal_chunk[(unsigned int)ceil(rel_pos)], 0);
 		}
 
+		// Synchronize before performing FFT
 		work_group_barrier(CLK_LOCAL_MEM_FENCE);
 
-		// Compute stages
-		for (unsigned int stage = 0; stage < 10; ++stage)
+		// Transfer results to output buffer
+		fft_output[j] = length(fft_mem[j]);
+
+		if (note_id != 0)
 		{
-			unsigned int n_universes = FFT_SIZE >> (stage + 1);
-	        unsigned int n_pairs = 1 << stage;
-	        unsigned int exp_spacing = 10 - (stage + 1);
-
-	        unsigned int k = j % n_pairs;
-	        unsigned int u = j - k;
-
-            float2 even = fft_mem[(u << stage) + k];
-            float2 odd = cmult(fft_mem[((u + n_universes) << stage) + k], cexp((k << exp_spacing) * 2 * M_PI_F / FFT_SIZE));
-
-            // After all values gathered, synchronize and write
-            work_group_barrier(CLK_LOCAL_MEM_FENCE);
-
-            fft_mem[(u << (stage + 1)) + k] = even + odd;
-            fft_mem[(u << (stage + 1)) + k + n_pairs] = even - odd;
-
-            work_group_barrier(CLK_LOCAL_MEM_FENCE);
+			wait_group_events(1, &output_copy);
 		}
-
-		// Make sure output buffer is clear
-		if (note_id > 0)
-		{
-			wait_group_events(1, &temp_output_mem_copy);
-		}
-
-		// Get magnitude of each complex number and store
-		temp_output_mem[j] = length(fft_mem[j]);
-
-		// Copy to global memory
-		temp_output_mem_copy = async_work_group_copy(output + output_offset + note_id * FFT_SIZE, temp_output_mem, FFT_SIZE / 2, 0);
+		unsigned int small_output_offset = note_id * FFT_SIZE / 2;
+		output_copy = async_work_group_copy(output + big_output_offset + small_output_offset, fft_output, FFT_SIZE / 2, 0);
 	}
 }

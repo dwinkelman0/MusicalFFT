@@ -3,8 +3,6 @@
 
 #include "opencl_context.h"
 
-#include <iostream>
-
 
 class OpenCLKernelMemory
 {

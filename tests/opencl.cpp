@@ -57,7 +57,6 @@ TEST_F(OpenCLTest, MemoryReadWrite)
 }
 
 
-/*
 TEST_F(OpenCLTest, MusicalFFT)
 {
 	const float data_freq = 44100;
@@ -77,7 +76,6 @@ TEST_F(OpenCLTest, MusicalFFT)
 		data[i] = sum;
 	}
 
-	size_t n_output = 0;
-	float* output = musical_fft_hw(ctx, data_freq, n_data, data, base_note_freq, 100, &n_output);
+	OpenCLReadOnlyMemory* mem = musical_fft_hw(ctx, data_freq, n_data, data, 220, base_note_freq);
+	const float* output = reinterpret_cast<const float*>(mem->read());
 }
-*/
