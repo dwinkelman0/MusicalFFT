@@ -9,6 +9,8 @@ MusicalFFT::MusicalFFT(OpenCLContext* ctx) :
 	fft_kernel_done(nullptr),
 	fft_input_mem(nullptr),
 	fft_output_mem(nullptr),
+	notes_kernel(nullptr),
+	notes_output_mem(nullptr),
 	n_chunks(0)
 {}
 
@@ -36,6 +38,17 @@ MusicalFFT::~MusicalFFT()
 	{
 		delete fft_output_mem;
 		fft_output_mem = nullptr;
+	}
+	if (notes_kernel)
+	{
+		cl_int err = clReleaseKernel(notes_kernel);
+		checkError(err, "clReleaseKernel");
+		notes_kernel = nullptr;
+	}
+	if (notes_output_mem)
+	{
+		delete notes_output_mem;
+		notes_output_mem = nullptr;
 	}
 }
 
@@ -76,23 +89,27 @@ void MusicalFFT::run(const float data_rate, const size_t n_signal, const float* 
 	size_t fft_input_mem_size = n_signal * sizeof(float);
 	if (fft_input_mem && fft_input_mem->getSize() != fft_input_mem_size)
 	{
+		std::cout << "Resize input memory" << std::endl;
 		delete fft_input_mem;
 		fft_input_mem = nullptr;
 	}
 	if (!fft_input_mem)
 	{
+		std::cout << "Allocate input memory" << std::endl;
 		fft_input_mem = new OpenCLWriteOnlyMemory(devices[0], fft_input_mem_size, CL_MEM_READ_ONLY);
 	}
 
 	size_t fft_output_mem_size = n_chunks * FFT_SIZE * 6 * sizeof(float);
 	if (fft_output_mem && fft_output_mem->getSize() != fft_output_mem_size)
 	{
+		std::cout << "Resize output memory" << std::endl;
 		delete fft_output_mem;
 		fft_output_mem = nullptr;
 	}
 	if (!fft_output_mem)
 	{
-		fft_output_mem = new OpenCLReadOnlyMemory(devices[0], fft_output_mem_size, CL_MEM_WRITE_ONLY);
+		std::cout << "Allocate output memory" << std::endl;
+		fft_output_mem = new OpenCLReadOnlyMemory(devices[0], fft_output_mem_size, CL_MEM_READ_WRITE);
 	}
 
 	// Write signal to device memory
@@ -127,18 +144,78 @@ const float* MusicalFFT::readComplete(size_t* n_chunks, size_t* n_overtones_per_
 {
 	// Make sure the computation executed and completed
 	if (!fft_output_mem) return nullptr;
-	if (fft_kernel_done)
-	{
-		cl_int err = 0;
-		err = clWaitForEvents(1, &fft_kernel_done);
-		checkError(err, "clWaitForEvents");
-		err = clReleaseEvent(fft_kernel_done);
-		checkError(err, "clReleaseEvent");
-		fft_kernel_done = nullptr;
-	}
+	waitForEvent(&fft_kernel_done);
 
 	// Retrieve output from the buffer
 	*n_chunks = this->n_chunks;
 	*n_overtones_per_note = FFT_SIZE / 2;
 	return reinterpret_cast<const float*>(fft_output_mem->read());
+}
+
+
+const float* MusicalFFT::readNotes(size_t* n_chunks, size_t* n_notes)
+{
+	// Make sure the FFT computation executed and completed
+	if (!fft_output_mem) return nullptr;
+	waitForEvent(&fft_kernel_done);
+
+	// Execute a kernel to gather the notes from global memory
+	if (!notes_kernel)
+	{
+		std::cout << "Compile kernel" << std::endl;
+		notes_kernel = ctx->createKernel("gather_notes", "../kernels/gather_notes.cl");
+	}
+
+	// Create buffer for the output
+	// If the buffer is the wrong size, delete and resize
+	std::vector<OpenCLDevice*> devices = ctx->getDevices();
+
+	size_t notes_output_mem_size = this->n_chunks * N_STAGES * 12 * sizeof(float);
+	if (notes_output_mem && notes_output_mem->getSize() != notes_output_mem_size)
+	{
+		std::cout << "Resize output memory" << std::endl;
+		delete notes_output_mem;
+		notes_output_mem = nullptr;
+	}
+	if (!notes_output_mem)
+	{
+		std::cout << "Allocate output memory" << std::endl;
+		notes_output_mem = new OpenCLReadOnlyMemory(devices[0], notes_output_mem_size, CL_MEM_WRITE_ONLY);
+	}
+
+	// Set up arguments
+	fft_output_mem->setAsKernelArgument(notes_kernel, 0);
+	notes_output_mem->setAsKernelArgument(notes_kernel, 1);
+
+	// Kernel execution configuration
+	cl_uint work_dim = 1;
+	size_t global_work_offset[] = { 0 };
+	size_t global_work_size[] = { this->n_chunks };
+	size_t local_work_size[] = { FFT_SIZE / 2 };
+
+	// Execute kernel
+	cl_event notes_kernel_done;
+	cl_int err = clEnqueueNDRangeKernel(devices[0]->getCommandQueue(), notes_kernel, work_dim, global_work_offset, global_work_size, nullptr, 0, nullptr, &notes_kernel_done);
+	checkError(err, "clEnqueueNDRangeKernel");
+	waitForEvent(&notes_kernel_done);
+
+	// Return output
+	*n_chunks = this->n_chunks;
+	*n_notes = 12 * N_STAGES;
+	return reinterpret_cast<const float*>(notes_output_mem->read());
+}
+
+
+void MusicalFFT::waitForEvent(cl_event* event)
+{
+	if (!event) return;
+	if (*event)
+	{
+		cl_int err = 0;
+		err = clWaitForEvents(1, event);
+		checkError(err, "clWaitForEvents");
+		err = clReleaseEvent(*event);
+		checkError(err, "clReleaseEvent");
+		*event = nullptr;
+	}
 }

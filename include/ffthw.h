@@ -10,6 +10,7 @@
 #include <vector>
 
 #define FFT_SIZE 1024
+#define N_STAGES 10
 
 
 class MusicalFFT
@@ -26,11 +27,19 @@ public:
 	const float* readNotes(size_t* n_chunks, size_t* n_notes);
 
 protected:
+	static void waitForEvent(cl_event* event);
+
+protected:
 	OpenCLContext* ctx;
+
 	cl_kernel fft_kernel;
 	cl_event fft_kernel_done;
 	OpenCLWriteOnlyMemory* fft_input_mem;
 	OpenCLReadOnlyMemory* fft_output_mem;
+
+	cl_kernel notes_kernel;
+	OpenCLReadOnlyMemory* notes_output_mem;
+
 	size_t n_chunks;
 };
 

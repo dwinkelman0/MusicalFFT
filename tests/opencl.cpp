@@ -81,7 +81,7 @@ TEST_F(OpenCLTest, MusicalFFT)
 	mffc.run(data_freq, n_data, data, 220, base_note_freq);
 
 	size_t n_chunks, n_overtones_per_note;
-	const float* output = mffc.readComplete(&n_chunks, &n_overtones_per_note);
+	const float* complete_output = mffc.readComplete(&n_chunks, &n_overtones_per_note);
 
 	std::cout << "Computed " << n_chunks << " chunks" << std::endl;
 
@@ -90,7 +90,20 @@ TEST_F(OpenCLTest, MusicalFFT)
 		printf("%2d: ", i);
 		for (int j = 0; j < 12; ++j)
 		{
-			printf("%.2e |", output[FFT_SIZE / 2 * j + i]);
+			printf("%.2e | ", complete_output[FFT_SIZE / 2 * j + i]);
+		}
+		std::cout << std::endl;
+	}
+
+	size_t n_notes;
+	const float* notes_output = mffc.readNotes(&n_chunks, &n_notes);
+
+	for (int row = 0; row < n_notes / 12; ++row)
+	{
+		printf("%2d: ", row);
+		for (int col = 0; col < 12; ++col)
+		{
+			printf("%.2e | ", notes_output[row * 12 + col]);
 		}
 		std::cout << std::endl;
 	}
