@@ -1,6 +1,7 @@
 #include "opencl_fixture.h"
 
 #include <ffthw.h>
+#include <opencl_mem.h>
 
 #include <gtest/gtest.h>
 
@@ -25,29 +26,36 @@ TEST_F(OpenCLTest, DeviceInfo)
 
 TEST_F(OpenCLTest, MemoryReadWrite)
 {
+	// Set up a buffer
+	const size_t mem_size = 16 * sizeof(uint32_t);
 	std::vector<OpenCLDevice*> devices = ctx->getDevices();
-	OpenCLMemory* gpu_mem = devices[0]->newMemory(16 * sizeof(uint32_t));
+	OpenCLReadWriteMemory* mem = new OpenCLReadWriteMemory(devices[0], mem_size, 0);
 
+	// Generate test data
 	uint32_t test_data[32];
 	for (int i = 0; i < 32; ++i)
 	{
 		test_data[i] = i;
 	}
 
-	gpu_mem->write(reinterpret_cast<uint8_t*>(test_data), 16 * sizeof(uint32_t));
+	// Write a portion of the data to buffer
+	uint8_t* input_buffer = mem->getWriteableBuffer();
+	memcpy(input_buffer, test_data, mem_size);
+	mem->write();
+	memset(input_buffer, 0, mem_size);
 
-	uint32_t output[16];
-	size_t n_written = 0;
-	gpu_mem->read(16 * sizeof(uint32_t), reinterpret_cast<uint8_t*>(output), &n_written);
+	// Read the buffer
+	const uint32_t* output_buffer = reinterpret_cast<const uint32_t*>(mem->read());
 
-	EXPECT_EQ(n_written, 16 * sizeof(uint32_t));
+	// Check that the new values match the original
 	for (int i = 0; i < 16; ++i)
 	{
-		EXPECT_EQ(test_data[i], output[i]);
+		EXPECT_EQ(test_data[i], output_buffer[i]);
 	}
 }
 
 
+/*
 TEST_F(OpenCLTest, MusicalFFT)
 {
 	const float data_freq = 44100;
@@ -70,3 +78,4 @@ TEST_F(OpenCLTest, MusicalFFT)
 	size_t n_output = 0;
 	float* output = musical_fft_hw(ctx, data_freq, n_data, data, base_note_freq, 100, &n_output);
 }
+*/

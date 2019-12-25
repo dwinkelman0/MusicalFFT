@@ -16,29 +16,6 @@ class OpenCLContext;
 void checkError(const cl_int err, const char* message);
 
 
-class OpenCLMemory
-{
-public:
-	OpenCLMemory(const size_t size, OpenCLDevice* device);
-
-	~OpenCLMemory();
-
-	void write(const uint8_t* data, const size_t n_data);
-
-	void read(const size_t n_buffer, uint8_t* buffer, size_t* n_read);
-
-	cl_mem getHandle() const
-	{
-		return mem_handle;
-	}
-
-protected:
-	cl_mem mem_handle;
-	size_t size;
-	OpenCLDevice* device;
-};
-
-
 class OpenCLDevice
 {
 	friend class OpenCLMemory;
@@ -48,8 +25,6 @@ public:
 
 	~OpenCLDevice();
 
-	OpenCLMemory* newMemory(const size_t size);
-
 	uint32_t getLocalMemorySize();
 	uint32_t getMaxWorkGroupSize();
 	uint32_t getMaxComputeUnits();
@@ -57,6 +32,11 @@ public:
 	cl_command_queue getCommandQueue() const
 	{
 		return cmdq;
+	}
+
+	cl_context getContext() const
+	{
+		return ctx;
 	}
 
 protected:
