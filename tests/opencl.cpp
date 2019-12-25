@@ -52,6 +52,8 @@ TEST_F(OpenCLTest, MemoryReadWrite)
 	{
 		EXPECT_EQ(test_data[i], output_buffer[i]);
 	}
+
+	delete mem;
 }
 
 

@@ -12,12 +12,9 @@ public:
 	OpenCLKernelMemory(OpenCLDevice* device, const size_t size, const cl_mem_flags flags) :
 		device(device),
 		device_buffer(nullptr),
-		host_buffer(nullptr),
 		size(size),
 		flags(flags)
-	{
-		std::cout << "MEMORY [" << size << "] flags=" << flags << std::endl;
-	}
+	{}
 
 	~OpenCLKernelMemory()
 	{
@@ -25,11 +22,6 @@ public:
 		{
 			clReleaseMemObject(device_buffer);
 			device_buffer = nullptr;
-		}
-		if (host_buffer)
-		{
-			delete[] host_buffer;
-			host_buffer = nullptr;
 		}
 	}
 
@@ -62,7 +54,6 @@ public:
 protected:
 	OpenCLDevice* device;
 	cl_mem device_buffer;
-	uint8_t* host_buffer;
 	size_t size;
 	cl_mem_flags flags;
 };
@@ -75,6 +66,15 @@ public:
 		OpenCLKernelMemory(device, size, flags),
 		host_buffer(nullptr)
 	{}
+
+	~OpenCLKernelHostMemory()
+	{
+		if (host_buffer)
+		{
+			delete[] host_buffer;
+			host_buffer = nullptr;
+		}
+	}
 
 	bool allocateHostMemory()
 	{
