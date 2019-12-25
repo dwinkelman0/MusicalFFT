@@ -7,6 +7,7 @@
 
 #include <math.h>
 #include <stdexcept>
+#include <stdio.h>
 
 
 TEST_F(OpenCLTest, BasicContext)
@@ -60,27 +61,37 @@ TEST_F(OpenCLTest, MemoryReadWrite)
 TEST_F(OpenCLTest, MusicalFFT)
 {
 	const float data_freq = 44100;
-	const uint32_t n_data = 44101;
+	const uint32_t n_data = 44101 * 60;
 	const float base_note_freq = 110; // A2
 
 	// Generate a signal for a C#3 (and some overtones)
 	float* data = new float[n_data];
-	float note_freq = 138.59;
+	float note_freq = 4 * 138.59;
 	for (int i = 0; i < n_data; ++i)
 	{
 		float sum = 0;
-		for (int j = 1; j <= 16; ++j)
+		for (int j = 1; j <= 1; ++j)
 		{
 			sum += sin(i / data_freq * 2*M_PI * note_freq * j) / j;
 		}
 		data[i] = sum;
 	}
 
-	OpenCLReadOnlyMemory* mem = musical_fft_hw(ctx, data_freq, n_data, data, 220, base_note_freq);
-	const float* output = reinterpret_cast<const float*>(mem->read());
+	MusicalFFT mffc(ctx);
+	mffc.run(data_freq, n_data, data, 220, base_note_freq);
 
-	for (int i = 0; i < 512; ++i)
+	size_t n_chunks, n_overtones_per_note;
+	const float* output = mffc.readComplete(&n_chunks, &n_overtones_per_note);
+
+	std::cout << "Computed " << n_chunks << " chunks" << std::endl;
+
+	for (int i = 0; i < 32; ++i)
 	{
-		std::cout << note_freq*i << " Hz: " << output[2048 + i] << std::endl;
+		printf("%2d: ", i);
+		for (int j = 0; j < 12; ++j)
+		{
+			printf("%.2e |", output[FFT_SIZE / 2 * j + i]);
+		}
+		std::cout << std::endl;
 	}
 }
