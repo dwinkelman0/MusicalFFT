@@ -115,7 +115,7 @@ void MusicalFFT::run(const float data_rate, const size_t n_signal, const float* 
 	// Write signal to device memory
 	uint8_t* signal_buffer = fft_input_mem->getWriteableBuffer();
 	memcpy(signal_buffer, signal, fft_input_mem->getSize());
-	fft_input_mem->write();
+	fft_input_mem->write(nullptr);
 
 	// Set up arguments
 	cl_int err = 0;
@@ -149,7 +149,7 @@ const float* MusicalFFT::readComplete(size_t* n_chunks, size_t* n_overtones_per_
 	// Retrieve output from the buffer
 	*n_chunks = this->n_chunks;
 	*n_overtones_per_note = FFT_SIZE / 2;
-	return reinterpret_cast<const float*>(fft_output_mem->read());
+	return reinterpret_cast<const float*>(fft_output_mem->read(nullptr));
 }
 
 
@@ -191,7 +191,6 @@ const float* MusicalFFT::readNotes(size_t* n_chunks, size_t* n_notes)
 	cl_uint work_dim = 1;
 	size_t global_work_offset[] = { 0 };
 	size_t global_work_size[] = { this->n_chunks };
-	size_t local_work_size[] = { FFT_SIZE / 2 };
 
 	// Execute kernel
 	cl_event notes_kernel_done;
@@ -202,7 +201,7 @@ const float* MusicalFFT::readNotes(size_t* n_chunks, size_t* n_notes)
 	// Return output
 	*n_chunks = this->n_chunks;
 	*n_notes = 12 * N_STAGES;
-	return reinterpret_cast<const float*>(notes_output_mem->read());
+	return reinterpret_cast<const float*>(notes_output_mem->read(nullptr));
 }
 
 

@@ -96,18 +96,25 @@ public:
 		OpenCLKernelHostMemory(device, size, flags | CL_MEM_HOST_READ_ONLY)
 	{}
 
-	const uint8_t* read()
+	bool readTo(uint8_t* dst, const size_t n_dst, size_t* n_read)
 	{
 		// If the device buffer is not yet created, do nothing
-		if (!device_buffer) return nullptr;
-
-		// Check that host memory is allocated
-		allocateHostMemory();
+		if (!device_buffer) return false;
 
 		// Copy memory from device to host and return the internal buffer
-		cl_int err = clEnqueueReadBuffer(device->getCommandQueue(), device_buffer, CL_TRUE, 0, size, host_buffer, 0, nullptr, nullptr);
+		size_t read_size = n_dst < size ? n_dst : size;
+		if (n_read) *n_read = read_size;
+		cl_int err = clEnqueueReadBuffer(device->getCommandQueue(), device_buffer, CL_TRUE, 0, read_size, dst, 0, nullptr, nullptr);
 		checkError(err, "clEnqueueReadBuffer");
-		return host_buffer;
+		return true;
+	}
+
+	const uint8_t* read(size_t* n_read)
+	{
+		// Check that host memory is allocated
+		allocateHostMemory();
+		
+		return readTo(host_buffer, size, n_read) ? host_buffer : nullptr;
 	}
 };
 
@@ -126,18 +133,25 @@ public:
 		return host_buffer;
 	}
 
-	bool write()
+	bool writeFrom(const uint8_t* src, const size_t n_src, size_t* n_write)
 	{
 		// If the host buffer is not yet created, do nothing
-		if (!host_buffer) return false;
+		if (!src) return false;
 
+		// Copy memory from host to device
+		size_t write_size = n_src > size ? n_src : size;
+		if (n_write) *n_write = write_size;
+		cl_int err = clEnqueueWriteBuffer(device->getCommandQueue(), device_buffer, CL_TRUE, 0, write_size, src, 0, nullptr, nullptr);
+		checkError(err, "clEnqueueWriteBuffer");
+		return true;
+	}
+
+	bool write(size_t* n_write)
+	{
 		// Check that device memory is allocated
 		allocateDeviceMemory();
 
-		// Copy memory from host to device
-		cl_int err = clEnqueueWriteBuffer(device->getCommandQueue(), device_buffer, CL_TRUE, 0, size, host_buffer, 0, nullptr, nullptr);
-		checkError(err, "clEnqueueWriteBuffer");
-		return true;
+		return writeFrom(host_buffer, size, n_write);
 	}
 };
 

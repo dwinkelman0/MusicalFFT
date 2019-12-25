@@ -42,11 +42,11 @@ TEST_F(OpenCLTest, MemoryReadWrite)
 	// Write a portion of the data to buffer
 	uint8_t* input_buffer = mem->getWriteableBuffer();
 	memcpy(input_buffer, test_data, mem_size);
-	mem->write();
+	mem->write(nullptr);
 	memset(input_buffer, 0, mem_size);
 
 	// Read the buffer
-	const uint32_t* output_buffer = reinterpret_cast<const uint32_t*>(mem->read());
+	const uint32_t* output_buffer = reinterpret_cast<const uint32_t*>(mem->read(nullptr));
 
 	// Check that the new values match the original
 	for (int i = 0; i < 16; ++i)
