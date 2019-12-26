@@ -2,6 +2,7 @@
 
 #include <ffthw.h>
 #include <opencl_mem.h>
+#include <wav.h>
 
 #include <gtest/gtest.h>
 
@@ -77,11 +78,11 @@ TEST_F(OpenCLTest, MusicalFFT)
 		data[i] = sum;
 	}
 
-	MusicalFFT mffc(ctx);
-	mffc.run(data_freq, n_data, data, 220, base_note_freq);
+	MusicalFFT mfft(ctx);
+	mfft.run(data_freq, n_data, data, 220, base_note_freq);
 
 	size_t n_chunks, n_overtones_per_note;
-	const float* complete_output = mffc.readComplete(&n_chunks, &n_overtones_per_note);
+	const float* complete_output = mfft.readComplete(&n_chunks, &n_overtones_per_note);
 
 	std::cout << "Computed " << n_chunks << " chunks" << std::endl;
 
@@ -96,7 +97,7 @@ TEST_F(OpenCLTest, MusicalFFT)
 	}
 
 	size_t n_notes;
-	const float* notes_output = mffc.readNotes(&n_chunks, &n_notes);
+	const float* notes_output = mfft.readNotes(&n_chunks, &n_notes);
 
 	for (int row = 0; row < n_notes / 12; ++row)
 	{
@@ -107,4 +108,61 @@ TEST_F(OpenCLTest, MusicalFFT)
 		}
 		std::cout << std::endl;
 	}
+}
+
+
+TEST_F(OpenCLTest, MusicalFFTRecording)
+{
+	WavFile file("../data/english_suite_4.wav");
+
+	const size_t n_samples = (size_t)(file.getSampleRate() * 2);
+	float* channel_left = new float[n_samples];
+	float* channel_right = new float[n_samples];
+	std::vector<float*> channels { channel_left, channel_right };
+
+	// Read file
+	EXPECT_EQ(n_samples, file.readSamples(n_samples, channels));
+
+	MusicalFFT mfft(ctx);
+	mfft.run(file.getSampleRate(), n_samples, channel_left, 200, 65.4064);
+
+	size_t n_chunks, n_overtones_per_note;
+	const float* complete_output = mfft.readComplete(&n_chunks, &n_overtones_per_note);
+
+	std::cout << "Computed " << n_chunks << " chunks" << std::endl;
+
+	for (int i = 0; i < 32; ++i)
+	{
+		printf("%2d: ", i);
+		for (int j = 0; j < 12; ++j)
+		{
+			printf("%.2e | ", complete_output[6 * FFT_SIZE * 200 + FFT_SIZE / 2 * j + i]);
+		}
+		std::cout << std::endl;
+	}
+
+	size_t n_notes;
+	const float* notes_output = mfft.readNotes(&n_chunks, &n_notes);
+
+	for (int chunk_id = 0; chunk_id < n_chunks; ++chunk_id)
+	{
+		const float* chunk = notes_output + chunk_id * n_notes;
+
+		float loudest_mag = -1e10;
+		int loudest_index = 0;
+		for (int i = 0; i < n_notes; ++i)
+		{
+			if (chunk[i] > loudest_mag)
+			{
+				loudest_mag = chunk[i];
+				loudest_index = i;
+			}
+		}
+		std::cout << loudest_index << " --> " << loudest_mag << std::endl;
+	}
+
+	delete[] channel_left;
+	channel_left = nullptr;
+	delete[] channel_right;
+	channel_right = nullptr;
 }

@@ -28,6 +28,10 @@ public:
 
 	size_t readSamples(const size_t n_samples, const std::vector<float*> outputs);
 
+	size_t skipSeconds(const float seconds);
+
+	size_t skipSamples(const size_t samples);
+
 protected:
 	uint16_t read16();
 	uint32_t read32();

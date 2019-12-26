@@ -140,7 +140,8 @@ size_t WavFile::readSamples(const size_t samples, const std::vector<float*> outp
 			float* output = outputs[channel];
 			for (int j = 0; j < samples_to_read; ++j)
 			{
-				output[output_offset + j] = le16toh(reinterpret_cast<int16_t*>(buffer)[j * n_channels + channel]) * factor;
+				int16_t sample = le16toh(reinterpret_cast<uint16_t*>(buffer)[j * n_channels + channel]);
+				output[output_offset + j] = sample * factor;
 			}
 		}
 
@@ -148,6 +149,21 @@ size_t WavFile::readSamples(const size_t samples, const std::vector<float*> outp
 	}
 
 	return total_samples;
+}
+
+
+size_t WavFile::skipSeconds(const float seconds)
+{
+	return skipSamples((size_t)floor(seconds * sample_rate));
+}
+
+
+size_t WavFile::skipSamples(const size_t samples)
+{
+	size_t ideal_bytes = samples * block_align;
+	size_t bytes_to_skip = ideal_bytes < data_bytes_remaining ? ideal_bytes : data_bytes_remaining;
+	ist.seekg(bytes_to_skip, std::ios_base::cur);
+	return bytes_to_skip;
 }
 
 
