@@ -9,8 +9,8 @@
 #include <string.h>
 #include <vector>
 
-#define FFT_SIZE 1024
 #define N_STAGES 10
+#define FFT_SIZE (1 << N_STAGES)
 
 
 class MusicalFFT
@@ -20,7 +20,7 @@ public:
 
 	~MusicalFFT();
 
-	void run(const float data_rate, const size_t n_signal, const float* signal, const float chunk_rate, const float base_note_freq);
+	void runFFT(const float data_rate, const size_t n_signal, const float* signal, const float chunk_rate, const float base_note_freq);
 
 	const float* readComplete(size_t* n_chunks, size_t* n_overtones_per_note);
 

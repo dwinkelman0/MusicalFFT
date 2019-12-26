@@ -53,7 +53,7 @@ MusicalFFT::~MusicalFFT()
 }
 
 
-void MusicalFFT::run(const float data_rate, const size_t n_signal, const float* signal, const float chunk_rate, const float base_note_freq)
+void MusicalFFT::runFFT(const float data_rate, const size_t n_signal, const float* signal, const float chunk_rate, const float base_note_freq)
 {
 	// Calculate number of samples per chunk
 	float samples_per_chunk = data_rate / chunk_rate;

@@ -79,7 +79,7 @@ TEST_F(OpenCLTest, MusicalFFT)
 	}
 
 	MusicalFFT mfft(ctx);
-	mfft.run(data_freq, n_data, data, 220, base_note_freq);
+	mfft.runFFT(data_freq, n_data, data, 220, base_note_freq);
 
 	size_t n_chunks, n_overtones_per_note;
 	const float* complete_output = mfft.readComplete(&n_chunks, &n_overtones_per_note);
@@ -124,7 +124,7 @@ TEST_F(OpenCLTest, MusicalFFTRecording)
 	EXPECT_EQ(n_samples, file.readSamples(n_samples, channels));
 
 	MusicalFFT mfft(ctx);
-	mfft.run(file.getSampleRate(), n_samples, channel_left, 200, 65.4064);
+	mfft.runFFT(file.getSampleRate(), n_samples, channel_left, 200, 65.4064);
 
 	size_t n_chunks, n_overtones_per_note;
 	const float* complete_output = mfft.readComplete(&n_chunks, &n_overtones_per_note);
@@ -144,6 +144,7 @@ TEST_F(OpenCLTest, MusicalFFTRecording)
 	size_t n_notes;
 	const float* notes_output = mfft.readNotes(&n_chunks, &n_notes);
 
+	/*
 	for (int chunk_id = 0; chunk_id < n_chunks; ++chunk_id)
 	{
 		const float* chunk = notes_output + chunk_id * n_notes;
@@ -160,6 +161,12 @@ TEST_F(OpenCLTest, MusicalFFTRecording)
 		}
 		std::cout << loudest_index << " --> " << loudest_mag << std::endl;
 	}
+
+	for (int i = 0; i < n_overtones_per_note; ++i)
+	{
+		std::cout << complete_output[6 * FFT_SIZE * 200 + FFT_SIZE * 2 + i] << ", ";
+	}
+	*/
 
 	delete[] channel_left;
 	channel_left = nullptr;

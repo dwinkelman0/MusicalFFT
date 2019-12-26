@@ -1,5 +1,5 @@
-#define FFT_SIZE 1024
 #define N_STAGES 10
+#define FFT_SIZE (1 << N_STAGES)
 
 
 __kernel void gather_notes(__read_only __global float* fft_output, __write_only __global float* notes_output)
