@@ -108,6 +108,9 @@ TEST_F(OpenCLTest, MusicalFFT)
 		}
 		std::cout << std::endl;
 	}
+
+	delete[] data;
+	data = nullptr;
 }
 
 
@@ -141,32 +144,18 @@ TEST_F(OpenCLTest, MusicalFFTRecording)
 		std::cout << std::endl;
 	}
 
-	size_t n_notes;
-	const float* notes_output = mfft.readNotes(&n_chunks, &n_notes);
+	size_t n_quefrency;
+	const float* cepstrum_output = mfft.readCompleteCepstrum(&n_chunks, &n_quefrency);
 
-	/*
-	for (int chunk_id = 0; chunk_id < n_chunks; ++chunk_id)
+	for (int index = 0; index < n_quefrency; ++index)
 	{
-		const float* chunk = notes_output + chunk_id * n_notes;
-
-		float loudest_mag = -1e10;
-		int loudest_index = 0;
-		for (int i = 0; i < n_notes; ++i)
+		std::cout << "[";
+		for (int j = 0; j < 12; ++j)
 		{
-			if (chunk[i] > loudest_mag)
-			{
-				loudest_mag = chunk[i];
-				loudest_index = i;
-			}
+			std::cout << cepstrum_output[n_quefrency * 12 * 200 + FFT_SIZE * j + index] << ", ";
 		}
-		std::cout << loudest_index << " --> " << loudest_mag << std::endl;
+		std::cout << "], " << std::endl;
 	}
-
-	for (int i = 0; i < n_overtones_per_note; ++i)
-	{
-		std::cout << complete_output[6 * FFT_SIZE * 200 + FFT_SIZE * 2 + i] << ", ";
-	}
-	*/
 
 	delete[] channel_left;
 	channel_left = nullptr;

@@ -26,6 +26,8 @@ public:
 
 	const float* readNotes(size_t* n_chunks, size_t* n_notes);
 
+	const float* readCompleteCepstrum(size_t* n_chunks, size_t* n_samples_per_note);
+
 protected:
 	static void waitForEvent(cl_event* event);
 
@@ -36,6 +38,7 @@ protected:
 	cl_event fft_kernel_done;
 	OpenCLWriteOnlyMemory* fft_input_mem;
 	OpenCLReadOnlyMemory* fft_output_mem;
+	OpenCLReadOnlyMemory* cepstrum_output_mem;
 
 	cl_kernel notes_kernel;
 	OpenCLReadOnlyMemory* notes_output_mem;

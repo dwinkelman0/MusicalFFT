@@ -9,6 +9,7 @@ MusicalFFT::MusicalFFT(OpenCLContext* ctx) :
 	fft_kernel_done(nullptr),
 	fft_input_mem(nullptr),
 	fft_output_mem(nullptr),
+	cepstrum_output_mem(nullptr),
 	notes_kernel(nullptr),
 	notes_output_mem(nullptr),
 	n_chunks(0)
@@ -38,6 +39,11 @@ MusicalFFT::~MusicalFFT()
 	{
 		delete fft_output_mem;
 		fft_output_mem = nullptr;
+	}
+	if (cepstrum_output_mem)
+	{
+		delete cepstrum_output_mem;
+		cepstrum_output_mem = nullptr;
 	}
 	if (notes_kernel)
 	{
@@ -112,6 +118,19 @@ void MusicalFFT::runFFT(const float data_rate, const size_t n_signal, const floa
 		fft_output_mem = new OpenCLReadOnlyMemory(devices[0], fft_output_mem_size, CL_MEM_READ_WRITE);
 	}
 
+	size_t cepstrum_output_mem_size = n_chunks * FFT_SIZE * 12 * sizeof(float);
+	if (cepstrum_output_mem && cepstrum_output_mem->getSize() != cepstrum_output_mem_size)
+	{
+		std::cout << "Resize cepstrum output memory" << std::endl;
+		delete cepstrum_output_mem;
+		cepstrum_output_mem = nullptr;
+	}
+	if (!cepstrum_output_mem)
+	{
+		std::cout << "Allocate output memory" << std::endl;
+		cepstrum_output_mem = new OpenCLReadOnlyMemory(devices[0], cepstrum_output_mem_size, CL_MEM_READ_WRITE);
+	}
+
 	// Write signal to device memory
 	uint8_t* signal_buffer = fft_input_mem->getWriteableBuffer();
 	memcpy(signal_buffer, signal, fft_input_mem->getSize());
@@ -127,6 +146,7 @@ void MusicalFFT::runFFT(const float data_rate, const size_t n_signal, const floa
 	err = clSetKernelArg(fft_kernel, 3, (size_t)floor(samples_per_base_note + 2) * sizeof(cl_float), nullptr);
 	checkError(err, "clSetKernelArg");
 	fft_output_mem->setAsKernelArgument(fft_kernel, 4);
+	cepstrum_output_mem->setAsKernelArgument(fft_kernel, 5);
 
 	// Kernel execution configuration
 	cl_uint work_dim = 1;
@@ -202,6 +222,19 @@ const float* MusicalFFT::readNotes(size_t* n_chunks, size_t* n_notes)
 	*n_chunks = this->n_chunks;
 	*n_notes = 12 * N_STAGES;
 	return reinterpret_cast<const float*>(notes_output_mem->read(nullptr));
+}
+
+
+const float* MusicalFFT::readCompleteCepstrum(size_t* n_chunks, size_t* n_samples_per_note)
+{
+	// Make sure the computation executed and completed
+	if (!cepstrum_output_mem) return nullptr;
+	waitForEvent(&fft_kernel_done);
+
+	// Retrieve output from the buffer
+	*n_chunks = this->n_chunks;
+	*n_samples_per_note = FFT_SIZE;
+	return reinterpret_cast<const float*>(cepstrum_output_mem->read(nullptr));
 }
 
 
