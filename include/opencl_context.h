@@ -50,12 +50,19 @@ class OpenCLContext
 {
 	friend class OpenCLDevice;
 
-public:
+protected:
 	/*! Create an OpenCL context with a GPU */
 	OpenCLContext();
 
 	/*! Destructor */
 	~OpenCLContext();
+
+public:
+	static OpenCLContext* getInstance()
+	{
+		static OpenCLContext instance;
+		return &instance;
+	}
 
 	cl_kernel createKernel(const std::string& kernel_name, const std::string& file_name);
 

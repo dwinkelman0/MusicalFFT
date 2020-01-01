@@ -11,7 +11,6 @@ class OpenCLTest : public ::testing::Test
 {
 protected:
 	void SetUp() override;
-	void TearDown() override;
 
 protected:
 	OpenCLContext* ctx;

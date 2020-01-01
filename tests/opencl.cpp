@@ -129,44 +129,8 @@ TEST_F(OpenCLTest, MusicalFFTRecording)
 	size_t n_chunks, n_overtones_per_note;
 	const float* complete_output = mfft.readComplete(&n_chunks, &n_overtones_per_note);
 
-	std::cout << "Computed " << n_chunks << " chunks" << std::endl;
-
-	for (int i = 0; i < 32; ++i)
-	{
-		printf("%2d: ", i);
-		for (int j = 0; j < 12; ++j)
-		{
-			printf("%.2e | ", complete_output[6 * FFT_SIZE * 200 + FFT_SIZE / 2 * j + i]);
-		}
-		std::cout << std::endl;
-	}
-
 	size_t n_notes;
 	const float* notes_output = mfft.readNotes(&n_chunks, &n_notes);
-
-	/*
-	for (int chunk_id = 0; chunk_id < n_chunks; ++chunk_id)
-	{
-		const float* chunk = notes_output + chunk_id * n_notes;
-
-		float loudest_mag = -1e10;
-		int loudest_index = 0;
-		for (int i = 0; i < n_notes; ++i)
-		{
-			if (chunk[i] > loudest_mag)
-			{
-				loudest_mag = chunk[i];
-				loudest_index = i;
-			}
-		}
-		std::cout << loudest_index << " --> " << loudest_mag << std::endl;
-	}
-
-	for (int i = 0; i < n_overtones_per_note; ++i)
-	{
-		std::cout << complete_output[6 * FFT_SIZE * 200 + FFT_SIZE * 2 + i] << ", ";
-	}
-	*/
 
 	delete[] channel_left;
 	channel_left = nullptr;
