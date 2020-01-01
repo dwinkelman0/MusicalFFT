@@ -24,6 +24,11 @@ public:
 		return n_channels;
 	}
 
+	size_t getNumSamplesRemaining() const
+	{
+		return data_bytes_remaining / block_align;
+	}
+
 	size_t readSeconds(const float seconds, const std::vector<float*> outputs);
 
 	size_t readSamples(const size_t n_samples, const std::vector<float*> outputs);

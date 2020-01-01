@@ -1,6 +1,7 @@
 #include "opencl_fixture.h"
 
 #include <ffthw.h>
+#include <note_profile.h>
 #include <opencl_mem.h>
 #include <wav.h>
 
@@ -13,7 +14,7 @@
 
 TEST_F(OpenCLTest, BasicContext)
 {
-	EXPECT_NO_THROW(ctx->createKernel("vector_add", "../kernels/vector_add.cl"));
+	EXPECT_NO_THROW(ctx->createKernel("vector_add", "../kernels/vector_add.cl", ""));
 }
 
 
@@ -124,7 +125,7 @@ TEST_F(OpenCLTest, MusicalFFTRecording)
 	EXPECT_EQ(n_samples, file.readSamples(n_samples, channels));
 
 	MusicalFFT mfft(ctx);
-	mfft.runFFT(file.getSampleRate(), n_samples, channel_left, 200, 65.4064);
+	mfft.runFFT(file.getSampleRate(), n_samples, channel_left, 200, 65.4064 / 4);
 
 	size_t n_chunks, n_overtones_per_note;
 	const float* complete_output = mfft.readComplete(&n_chunks, &n_overtones_per_note);
@@ -137,3 +138,12 @@ TEST_F(OpenCLTest, MusicalFFTRecording)
 	delete[] channel_right;
 	channel_right = nullptr;
 }
+
+
+/*
+TEST_F(OpenCLTest, MusicalFFTCompleteFile)
+{
+	NoteProfile profile(200, 12, 440);
+	profile.fromWav("../data/english_suite_4.wav");
+}
+*/

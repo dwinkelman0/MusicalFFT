@@ -1,4 +1,3 @@
-#define N_STAGES 10
 #define FFT_SIZE (1 << N_STAGES)
 
 
@@ -117,7 +116,14 @@ __kernel void musical_fft(__read_only __global float* signal, float samples_per_
 
 		// Transfer results to output buffer and synchronize before copying
 		// Output is in decibels
+		#ifdef OUTPUT_DECIBELS
 		fft_output[j] = 20 * log10(length(fft_mem[j]) / FFT_SIZE);
+		#else
+		#ifdef OUTPUT_POWER
+		float amplitude = length(fft_mem[j]) / FFT_SIZE;
+		fft_output[j] = amplitude * amplitude;
+		#endif
+		#endif
 		work_group_barrier(CLK_LOCAL_MEM_FENCE);
 
 

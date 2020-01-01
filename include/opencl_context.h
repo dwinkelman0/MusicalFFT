@@ -64,7 +64,7 @@ public:
 		return &instance;
 	}
 
-	cl_kernel createKernel(const std::string& kernel_name, const std::string& file_name);
+	cl_kernel createKernel(const std::string& kernel_name, const std::string& file_name, const std::string& compiler_options);
 
 	std::vector<OpenCLDevice*> getDevices() const
 	{
@@ -73,8 +73,11 @@ public:
 
 
 protected:
-	cl_kernel compileKernelFromSource(const std::string& kernel_name, const std::string& file_path);
+	cl_kernel compileKernelFromSource(const std::string& kernel_name, const std::string& file_path, const std::string& compiler_options);
 
+	/*! Will not work in a general sense since there is no reliable way to
+	 *  uniquely tag devices
+	 */
 	cl_kernel loadKernelFromBinary(const std::string& kernel_name, const std::string& file_path);
 
 protected:

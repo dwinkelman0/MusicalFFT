@@ -1,6 +1,7 @@
 #include "ffthw.h"
 
 #include <iostream>
+#include <sstream>
 
 
 MusicalFFT::MusicalFFT(OpenCLContext* ctx) :
@@ -79,7 +80,9 @@ void MusicalFFT::runFFT(const float data_rate, const size_t n_signal, const floa
 	if (!fft_kernel)
 	{
 		std::cout << "Compile kernel" << std::endl;
-		fft_kernel = ctx->createKernel("musical_fft", "../kernels/musical_fft.cl");
+		std::stringstream compiler_options;
+		compiler_options << "-D OUTPUT_POWER -D N_STAGES=" << N_STAGES;
+		fft_kernel = ctx->createKernel("musical_fft", "../kernels/musical_fft.cl", compiler_options.str());
 	}
 
 	// Create buffers for the input and output
@@ -163,7 +166,9 @@ const float* MusicalFFT::readNotes(size_t* n_chunks, size_t* n_notes)
 	if (!notes_kernel)
 	{
 		std::cout << "Compile kernel" << std::endl;
-		notes_kernel = ctx->createKernel("gather_notes", "../kernels/gather_notes.cl");
+		std::stringstream compiler_options;
+		compiler_options << "-D N_STAGES=" << N_STAGES;
+		notes_kernel = ctx->createKernel("gather_notes", "../kernels/gather_notes.cl", compiler_options.str());
 	}
 
 	// Create buffer for the output

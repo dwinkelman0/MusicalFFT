@@ -1,4 +1,3 @@
-#define N_STAGES 10
 #define FFT_SIZE (1 << N_STAGES)
 
 

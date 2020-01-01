@@ -126,7 +126,7 @@ OpenCLContext::~OpenCLContext()
 }
 
 
-cl_kernel OpenCLContext::createKernel(const std::string& kernel_name, const std::string& file_path)
+cl_kernel OpenCLContext::createKernel(const std::string& kernel_name, const std::string& file_path, const std::string& compiler_options)
 {
     boost::filesystem::path src_path(file_path);
     bool src_exists = boost::filesystem::exists(src_path);
@@ -145,7 +145,7 @@ cl_kernel OpenCLContext::createKernel(const std::string& kernel_name, const std:
             if (difftime(src_time, cached_time) > 0)
             {
                 // The source is more recent, recompile
-                return compileKernelFromSource(kernel_name, file_path);
+                return compileKernelFromSource(kernel_name, file_path, compiler_options);
             }
             else
             {
@@ -155,7 +155,7 @@ cl_kernel OpenCLContext::createKernel(const std::string& kernel_name, const std:
         }
         else
         {
-            return compileKernelFromSource(kernel_name, file_path);
+            return compileKernelFromSource(kernel_name, file_path, compiler_options);
         }
     }
     else
@@ -174,7 +174,7 @@ cl_kernel OpenCLContext::createKernel(const std::string& kernel_name, const std:
 }
 
 
-cl_kernel OpenCLContext::compileKernelFromSource(const std::string& kernel_name, const std::string& file_path)
+cl_kernel OpenCLContext::compileKernelFromSource(const std::string& kernel_name, const std::string& file_path, const std::string& compiler_options)
 {
     cl_int err = 0;
     
@@ -189,8 +189,7 @@ cl_kernel OpenCLContext::compileKernelFromSource(const std::string& kernel_name,
     checkError(err, "clCreateProgramWithSource");
 
     // Compile program
-    const char* options = "";
-    err = clBuildProgram(program, n_devices, device_ids, options, NULL, NULL);
+    err = clBuildProgram(program, n_devices, device_ids, compiler_options.c_str(), NULL, NULL);
     try
     {
         checkError(err, "clBuildProgram");
