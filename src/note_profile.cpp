@@ -6,14 +6,13 @@
 #include <iostream>
 
 
-NoteProfile::NoteProfile(const size_t n_samples_per_chunk, const int32_t base_note_id, const float a4_freq) :
+NoteProfile::NoteProfile(const int32_t base_note_id) :
 	timestamps(nullptr),
+	timestamp_freq(0),
 	notes(nullptr),
 	n_chunks(0),
 	n_notes_per_chunk(12 * N_STAGES),
-	n_samples_per_chunk(n_samples_per_chunk),
-	base_note_id(base_note_id),
-	a4_freq(a4_freq)
+	base_note_id(base_note_id)
 {}
 
 
@@ -32,7 +31,7 @@ NoteProfile::~NoteProfile()
 }
 
 
-void NoteProfile::fromWav(const std::string& fname)
+void NoteProfile::fromWav(const std::string& fname, const float a4_freq, const size_t n_samples_per_chunk)
 {
 	WavFile file(fname);
 	MusicalFFT mfft(OpenCLContext::getInstance());
@@ -81,7 +80,6 @@ void NoteProfile::fromWav(const std::string& fname)
 		const size_t n_samples_to_read = buffer_size - n_unused_samples;
 
 		// Read as many samples as possible into the buffers
-		std::cout << "Samples remaining " << file.getNumSamplesRemaining() << std::endl;
 		size_t n_samples_read = file.readSamples(n_samples_to_read, buffers_with_offset);
 		if (n_samples_read == 0) break;
 
@@ -115,11 +113,19 @@ void NoteProfile::fromWav(const std::string& fname)
 			}
 		}
 
-		std::cout << "New Chunks " << n_new_chunks << std::endl;
-
 		// Copy the data into output
 		memcpy(notes + chunk_index * n_notes_per_chunk, aggregation_buffer, n_new_chunks * n_notes_per_chunk * sizeof(float));
 		chunk_index += n_new_chunks;
+	}
+
+	// There might be one or two extra slots for FFT output
+	n_chunks = chunk_index;
+
+	// Fill in timestamps
+	const size_t center_offset = samples_per_base_note / 2;
+	for (size_t i = 0; i < n_chunks; ++i)
+	{
+		timestamps[i] = i * n_samples_per_chunk + center_offset;
 	}
 
 	// Clean up
@@ -128,4 +134,6 @@ void NoteProfile::fromWav(const std::string& fname)
 		delete[] buffers[i];
 		buffers[i] = nullptr;
 	}
+	delete[] aggregation_buffer;
+	aggregation_buffer = nullptr;
 }

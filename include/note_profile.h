@@ -8,21 +8,20 @@
 class NoteProfile
 {
 public:
-	NoteProfile(const size_t n_samples_per_chunk, const int32_t base_note_id, const float a4_freq);
+	NoteProfile(const int32_t base_note_id);
 
 	~NoteProfile();
 
-	void fromWav(const std::string& fname);
+	void fromWav(const std::string& fname, const float a4_freq, const size_t n_samples_per_chunk);
 
 
-protected:
+public:
 	uint64_t* timestamps;
+	uint64_t timestamp_freq;
 	float* notes;
-	size_t n_samples_per_chunk;
 	size_t n_notes_per_chunk;
 	size_t n_chunks;
 	int32_t base_note_id;
-	float a4_freq;
 };
 
 

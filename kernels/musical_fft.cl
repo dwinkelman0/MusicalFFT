@@ -80,13 +80,14 @@ __kernel void musical_fft(__read_only __global float* signal, unsigned int sampl
 
 	for (unsigned int note_id = 0; note_id < 12; ++note_id)
 	{
+		float samples_per_fft_slot = (samples_per_base_note / pow(2, (float)note_id / 12)) / FFT_SIZE;
+		float note_offset = samples_per_fft_slot * samples_per_chunk / 2;
 		for (unsigned int i = 0; i < 2; ++i)
 		{
-			float samples_per_fft_slot = (samples_per_base_note / pow(2, (float)note_id / 12)) / FFT_SIZE;
 			float rel_pos = (2 * j + i) * samples_per_fft_slot;
 			float weight_hi = rel_pos - floor(rel_pos);
 			float weight_lo = 1 - weight_hi;
-			fft_mem[j * 2 + i] = (float2)(weight_lo * signal_chunk[(unsigned int)floor(rel_pos)] + weight_hi * signal_chunk[(unsigned int)ceil(rel_pos)], 0);
+			fft_mem[j * 2 + i] = (float2)(weight_lo * signal_chunk[(unsigned int)floor(rel_pos)] + weight_hi * signal_chunk[(unsigned int)ceil(rel_pos)] + note_offset, 0);
 		}
 
 		// Synchronize before performing FFT
