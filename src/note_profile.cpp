@@ -85,36 +85,44 @@ void NoteProfile::fromWav(const std::string& fname, const float a4_freq, const s
 
 		// Perform the FFT and aggregate the data
 		size_t n_new_chunks = 0;
-		for (size_t i = 0; i < file.getNumChannels(); ++i)
+		
+		if (file.getNumChannels() == 1)
 		{
-			n_new_chunks = mfft.runFFT(file.getSampleRate(), n_unused_samples + n_samples_read, buffers[i], n_samples_per_chunk, base_note_freq);
-			if (!aggregation_buffer)
-			{
-				aggregation_buffer = new float[n_new_chunks * n_notes_per_chunk];
-			}
+			n_new_chunks = mfft.runFFT(file.getSampleRate(), n_unused_samples + n_samples_read, buffers[0], n_samples_per_chunk, base_note_freq);
 			const float* notes_output = mfft.readNotes(nullptr, nullptr);
-			if (i == 0)
+			memcpy(notes + chunk_index * n_notes_per_chunk, notes_output, n_new_chunks * n_notes_per_chunk * sizeof(float));
+		}
+		else
+		{
+			for (size_t i = 0; i < file.getNumChannels(); ++i)
 			{
-				memcpy(aggregation_buffer, notes_output, n_new_chunks * n_notes_per_chunk * sizeof(float));
-			}
-			else
-			{
-				for (size_t index = 0; index < n_new_chunks * n_notes_per_chunk; ++index)
+				n_new_chunks = mfft.runFFT(file.getSampleRate(), n_unused_samples + n_samples_read, buffers[i], n_samples_per_chunk, base_note_freq);
+				if (!aggregation_buffer)
 				{
-					aggregation_buffer[index] += notes_output[index];
+					aggregation_buffer = new float[n_new_chunks * n_notes_per_chunk];
+				}
+				const float* notes_output = mfft.readNotes(nullptr, nullptr);
+				if (i == 0)
+				{
+					memcpy(aggregation_buffer, notes_output, n_new_chunks * n_notes_per_chunk * sizeof(float));
+				}
+				else
+				{
+					for (size_t index = 0; index < n_new_chunks * n_notes_per_chunk; ++index)
+					{
+						aggregation_buffer[index] += notes_output[index];
+					}
 				}
 			}
-		}
-		if (file.getNumChannels() > 1)
-		{
+
 			for (size_t index = 0; index < n_new_chunks * n_notes_per_chunk; ++index)
 			{
-				aggregation_buffer[index] /= 2;
+				aggregation_buffer[index] /= file.getNumChannels();
 			}
-		}
 
-		// Copy the data into output
-		memcpy(notes + chunk_index * n_notes_per_chunk, aggregation_buffer, n_new_chunks * n_notes_per_chunk * sizeof(float));
+			// Copy the data into output
+			memcpy(notes + chunk_index * n_notes_per_chunk, aggregation_buffer, n_new_chunks * n_notes_per_chunk * sizeof(float));
+		}
 		chunk_index += n_new_chunks;
 	}
 

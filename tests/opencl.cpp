@@ -144,4 +144,19 @@ TEST_F(OpenCLTest, MusicalFFTCompleteFile)
 {
 	NoteProfile profile(12);
 	profile.fromWav("../data/english_suite_4.wav", 440, 200);
+
+	for (int i = 0; i < 10000; i += 1000)
+	{
+		const float* notes_output = profile.notes + profile.n_notes_per_chunk * i;
+		for (int row = 0; row < profile.n_notes_per_chunk / 12; ++row)
+		{
+			printf("%2d: ", row);
+			for (int col = 0; col < 12; ++col)
+			{
+				printf("%.2e | ", notes_output[row * 12 + col]);
+			}
+			std::cout << std::endl;
+		}
+		std::cout << std::endl;
+	}
 }
