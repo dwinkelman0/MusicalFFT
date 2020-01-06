@@ -54,12 +54,11 @@ float2 cmult(float2 c1, float2 c2)
  *    @param output: memory for the final result organized as a 3D array with
  *                   the following axes: (chunk, note, overtone)
  */
-__kernel void musical_fft(__read_only __global float* signal, float samples_per_chunk, float samples_per_base_note, __local float* signal_chunk, __write_only __global float* output)
+__kernel void musical_fft(__read_only __global float* signal, unsigned int samples_per_chunk, float samples_per_base_note, __local float* signal_chunk, __write_only __global float* output)
 {
 	// Determine which portion of the signal to use
 	unsigned int chunk_id = get_group_id(0);
-	float begin = chunk_id * samples_per_chunk;
-	unsigned int begin_index = (unsigned int)floor(begin);
+	unsigned int begin_index = chunk_id * samples_per_chunk;
 
 	// Determine which portion of the output to use
 	event_t output_copy;
@@ -76,7 +75,7 @@ __kernel void musical_fft(__read_only __global float* signal, float samples_per_
 	__local float fft_output[FFT_SIZE / 2];
 
 	// Cache the relevant portion of the signal into local memory
-	chunk_copy = async_work_group_copy(signal_chunk, signal + (unsigned int)floor(begin), (unsigned int)floor(samples_per_base_note + 2), 0);
+	chunk_copy = async_work_group_copy(signal_chunk, signal + begin_index, (unsigned int)floor(samples_per_base_note + 2), 0);
 	wait_group_events(1, &chunk_copy);
 
 	for (unsigned int note_id = 0; note_id < 12; ++note_id)
@@ -84,7 +83,7 @@ __kernel void musical_fft(__read_only __global float* signal, float samples_per_
 		for (unsigned int i = 0; i < 2; ++i)
 		{
 			float samples_per_fft_slot = (samples_per_base_note / pow(2, (float)note_id / 12)) / FFT_SIZE;
-			float rel_pos = begin + (2 * j + i) * samples_per_fft_slot - begin_index;
+			float rel_pos = (2 * j + i) * samples_per_fft_slot;
 			float weight_hi = rel_pos - floor(rel_pos);
 			float weight_lo = 1 - weight_hi;
 			fft_mem[j * 2 + i] = (float2)(weight_lo * signal_chunk[(unsigned int)floor(rel_pos)] + weight_hi * signal_chunk[(unsigned int)ceil(rel_pos)], 0);

@@ -20,7 +20,15 @@ public:
 
 	~MusicalFFT();
 
-	void runFFT(const float data_rate, const size_t n_signal, const float* signal, const float chunk_rate, const float base_note_freq);
+	/*! Run a musical FFT on a signal
+	 *    @param data_rate: frequency at which the signal was collected
+	 *    @param n_signal: number of samples in the signal
+	 *    @param signal: an array of samples collected at equal time intervals
+	 *    @param samples_per_chunk: spacing between each chunk in terms of
+	 *                              the sampling period
+	 *    @param base_note_freq: frequency of the lowest note to analyze
+	 */
+	size_t runFFT(const float data_rate, const size_t n_signal, const float* signal, const size_t samples_per_chunk, const float base_note_freq);
 
 	const float* readComplete(size_t* n_chunks, size_t* n_overtones_per_note);
 

@@ -54,23 +54,15 @@ MusicalFFT::~MusicalFFT()
 }
 
 
-void MusicalFFT::runFFT(const float data_rate, const size_t n_signal, const float* signal, const float chunk_rate, const float base_note_freq)
+size_t MusicalFFT::runFFT(const float data_rate, const size_t n_signal, const float* signal, const size_t samples_per_chunk, const float base_note_freq)
 {
-	// Calculate number of samples per chunk
-	float samples_per_chunk = data_rate / chunk_rate;
-
 	// Calculate number of samples for the longest frequency
 	// NOTE: not good practice to have base_note_freq > chunk_rate
 	float samples_per_base_note = data_rate / base_note_freq;
 	float max_base_note_freq = base_note_freq * pow(2, 11.0f / 12);
-	if (max_base_note_freq > chunk_rate)
-	{
-		throw std::runtime_error("The highest base note frequency is higher than the chunk rate");
-	}
 
 	// Calculate number of chunks that can be done with amount of data supplied
-	float max_chunks = ((n_signal - 3) - samples_per_base_note) / samples_per_chunk + 1;
-	n_chunks = (size_t)floor(max_chunks);
+	n_chunks = ((n_signal - 3) - (size_t)ceil(samples_per_base_note)) / samples_per_chunk + 1;
 	if (n_chunks == 0)
 	{
 		throw std::runtime_error("Cannot have 0 chunks");
@@ -123,7 +115,8 @@ void MusicalFFT::runFFT(const float data_rate, const size_t n_signal, const floa
 	// Set up arguments
 	cl_int err = 0;
 	fft_input_mem->setAsKernelArgument(fft_kernel, 0);
-	err = clSetKernelArg(fft_kernel, 1, sizeof(float), (void*)&samples_per_chunk);
+	cl_uint samples_per_chunk_arg = (cl_uint)samples_per_chunk;
+	err = clSetKernelArg(fft_kernel, 1, sizeof(cl_uint), (void*)&samples_per_chunk_arg);
 	checkError(err, "clSetKernelArg");
 	err = clSetKernelArg(fft_kernel, 2, sizeof(float), (void*)&samples_per_base_note);
 	checkError(err, "clSetKernelArg");
@@ -140,6 +133,8 @@ void MusicalFFT::runFFT(const float data_rate, const size_t n_signal, const floa
 	// Execute kernel
 	err = clEnqueueNDRangeKernel(devices[0]->getCommandQueue(), fft_kernel, work_dim, global_work_offset, global_work_size, local_work_size, 0, nullptr, &fft_kernel_done);
 	checkError(err, "clEnqueueNDRangeKernel");
+
+	return n_chunks;
 }
 
 
@@ -150,8 +145,8 @@ const float* MusicalFFT::readComplete(size_t* n_chunks, size_t* n_overtones_per_
 	waitForEvent(&fft_kernel_done);
 
 	// Retrieve output from the buffer
-	*n_chunks = this->n_chunks;
-	*n_overtones_per_note = FFT_SIZE / 2;
+	if (n_chunks) *n_chunks = this->n_chunks;
+	if (n_overtones_per_note) *n_overtones_per_note = FFT_SIZE / 2;
 	return reinterpret_cast<const float*>(fft_output_mem->read(nullptr));
 }
 
@@ -204,8 +199,8 @@ const float* MusicalFFT::readNotes(size_t* n_chunks, size_t* n_notes)
 	waitForEvent(&notes_kernel_done);
 
 	// Return output
-	*n_chunks = this->n_chunks;
-	*n_notes = 12 * N_STAGES;
+	if (n_chunks) *n_chunks = this->n_chunks;
+	if (n_notes) *n_notes = 12 * N_STAGES;
 	return reinterpret_cast<const float*>(notes_output_mem->read(nullptr));
 }
 
