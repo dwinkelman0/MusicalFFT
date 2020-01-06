@@ -133,6 +133,7 @@ size_t WavFile::readSamples(const size_t samples, const std::vector<float*> outp
 	{
 		size_t samples_to_read = buffer_capacity < samples_left ? buffer_capacity : samples_left;
 		ist.read(buffer, samples_to_read * block_align);
+		data_bytes_remaining -= samples_to_read * block_align;
 		samples_left -= samples_to_read;
 
 		for (int channel = 0; channel < outputs.size(); ++channel)

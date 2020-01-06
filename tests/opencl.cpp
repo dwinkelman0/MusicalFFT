@@ -140,10 +140,8 @@ TEST_F(OpenCLTest, MusicalFFTRecording)
 }
 
 
-/*
 TEST_F(OpenCLTest, MusicalFFTCompleteFile)
 {
 	NoteProfile profile(200, 12, 440);
 	profile.fromWav("../data/english_suite_4.wav");
 }
-*/
