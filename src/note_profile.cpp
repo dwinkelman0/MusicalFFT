@@ -8,11 +8,12 @@
 
 NoteProfile::NoteProfile(const int32_t base_note_id) :
 	timestamps(nullptr),
-	timestamp_freq(0),
+	n_samples_per_second(0),
 	notes(nullptr),
 	n_chunks(0),
 	n_notes_per_chunk(12 * N_STAGES),
-	base_note_id(base_note_id)
+	base_note_id(base_note_id),
+	n_samples_per_chunk(0)
 {}
 
 
@@ -41,6 +42,7 @@ void NoteProfile::fromWav(const std::string& fname, const float a4_freq, const s
 	const float samples_per_base_note = file.getSampleRate() / base_note_freq;
 
 	// Determine how much memory to allocate for notes
+	this->n_samples_per_chunk = n_samples_per_chunk;
 	const size_t n_total_samples = file.getNumSamplesRemaining();
 	n_chunks = (n_total_samples - 3 - (size_t)ceil(samples_per_base_note)) / n_samples_per_chunk + 1;
 
@@ -130,6 +132,7 @@ void NoteProfile::fromWav(const std::string& fname, const float a4_freq, const s
 	n_chunks = chunk_index;
 
 	// Fill in timestamps
+	n_samples_per_second = file.getSampleRate();
 	const size_t center_offset = samples_per_base_note / 2;
 	for (size_t i = 0; i < n_chunks; ++i)
 	{

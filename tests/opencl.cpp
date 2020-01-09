@@ -147,8 +147,9 @@ TEST_F(OpenCLTest, MusicalFFTCompleteFile)
 
 	for (int i = 0; i < 10000; i += 1000)
 	{
-		const float* notes_output = profile.notes + profile.n_notes_per_chunk * i;
-		for (int row = 0; row < profile.n_notes_per_chunk / 12; ++row)
+		std::cout << profile.getTimestampByIndex(i) / (float)profile.getSamplesPerSecond() << std::endl;
+		const float* notes_output = profile.getNotesByIndex(i);
+		for (int row = 0; row < profile.getNotesPerChunk() / 12; ++row)
 		{
 			printf("%2d: ", row);
 			for (int col = 0; col < 12; ++col)
