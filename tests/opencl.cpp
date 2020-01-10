@@ -1,6 +1,7 @@
 #include "opencl_fixture.h"
 
 #include <ffthw.h>
+#include <midi.h>
 #include <note_profile.h>
 #include <opencl_mem.h>
 #include <wav.h>
@@ -160,4 +161,10 @@ TEST_F(OpenCLTest, MusicalFFTCompleteFile)
 		}
 		std::cout << std::endl;
 	}
+}
+
+
+TEST_F(OpenCLTest, MIDI)
+{
+	MidiFile("../data/english_suite_4_ms-reduced.mid");
 }

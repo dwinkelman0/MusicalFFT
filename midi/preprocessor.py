@@ -12,6 +12,7 @@ def process(fname):
 	tempo_msgs = [msg for msg in meta_msgs if msg.type == "set_tempo"]
 	timesig_msgs = [msg for msg in meta_msgs if msg.type == "time_signature"]
 
+	"""
 	if len(tempo_msgs) == 0:
 		tempo_msgs.append(mido.MetaMessage("set_tempo", tempo=500000, time=0))
 		print("File {} does not have a tempo".format(fname))
@@ -19,6 +20,7 @@ def process(fname):
 	if len(timesig_msgs) == 0:
 		print("File {} does not have a time signature".format(fname))
 		return False
+	"""
 
 	# Get absolute times
 	for track in mid.tracks:
@@ -30,12 +32,12 @@ def process(fname):
 	for track in mid.tracks:
 
 		# Convert "note_on" with 0 velocity to "note_off"
-		for msg in track:
+		for i, msg in enumerate(track):
 			if msg.type == "note_on" and msg.velocity == 0:
-				msg.type = "note_off"
+				track[i] = mido.Message(type="note_off", velocity=0, note=msg.note, time=msg.time)
 
 		# Isolate relevant messages and append to output
-		output_track += [msg for msg in track if msg.type == "note_on" or msg.type == "note_off"]
+		output_track += [msg for msg in track if type(msg) == mido.Message and (msg.type == "note_on" or msg.type == "note_off")]
 
 	# Sort output messages by absolute time
 	output_track.sort(key=lambda msg: msg.time * 128 + msg.note)
