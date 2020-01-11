@@ -5,7 +5,9 @@
 
 
 MidiFile::MidiFile(const std::string& fname) :
-	ist(fname)
+	ist(fname),
+	data_bytes_remaining(0),
+	msgs()
 {
 	// Parse the header
 	if (read32be() != 0x4d546864 || read32be() != 6)
@@ -18,18 +20,18 @@ MidiFile::MidiFile(const std::string& fname) :
 	read16be();
 	read16be();
 
-	// There should be exactly one track
+	// There should be exactly one track; record its length
 	if (read32be() != 0x4d54726b)
 	{
 		throw std::runtime_error("Invalid file format (MIDI track)");
 	}
-
 	data_bytes_remaining = read32be();
 
-	int c = 0;
+	// Iterate through all messages
+	uint64_t abs_time = 0;
 	while (data_bytes_remaining > 0)
 	{
-		uint32_t time = readVarInt();
+		abs_time += readVarInt();
 		uint8_t type = read8() >> 4;
 		if (type == 8 || type == 9)
 		{
@@ -37,17 +39,16 @@ MidiFile::MidiFile(const std::string& fname) :
 			uint8_t velocity = read8();
 			assert(note < 128);
 			assert(velocity < 128);
+
+			msgs.push_back({abs_time, note, type == 9});
 		}
 		else
 		{
+			// Sometimes there are extra artifacts that should be ignored
 			uint8_t byte = read8();
 		}
 	}
-}
 
-
-MidiFile::~MidiFile()
-{
 	ist.close();
 }
 
