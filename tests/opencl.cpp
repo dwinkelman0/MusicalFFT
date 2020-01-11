@@ -88,7 +88,7 @@ TEST_F(OpenCLTest, MusicalFFT)
 
 	std::cout << "Computed " << n_chunks << " chunks" << std::endl;
 
-	for (int i = 0; i < 32; ++i)
+	for (int i = 0; i < 512; ++i)
 	{
 		printf("%2d: ", i);
 		for (int j = 0; j < 12; ++j)

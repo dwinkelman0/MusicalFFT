@@ -11,7 +11,7 @@ NoteProfile::NoteProfile(const int32_t base_note_id) :
 	n_samples_per_second(0),
 	notes(nullptr),
 	n_chunks(0),
-	n_notes_per_chunk(12 * N_STAGES),
+	n_notes_per_chunk(12 * (N_STAGES - 1)),
 	base_note_id(base_note_id),
 	n_samples_per_chunk(0)
 {}

@@ -11,7 +11,7 @@ __kernel void gather_notes(__read_only __global float* fft_output, __write_only 
 
 	for (unsigned int note_id = 0; note_id < 12; ++note_id)
 	{
-		for (unsigned int octave = 0; octave < N_STAGES; ++octave)
+		for (unsigned int octave = 0; octave < N_STAGES - 1; ++octave)
 		{
 			notes_output[output_offset + note_id + 12 * octave] = fft_output[input_offset + note_id * FFT_SIZE / 2 + (1 << octave)];
 		}

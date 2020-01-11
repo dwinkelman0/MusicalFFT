@@ -170,7 +170,7 @@ const float* MusicalFFT::readNotes(size_t* n_chunks, size_t* n_notes)
 	// If the buffer is the wrong size, delete and resize
 	std::vector<OpenCLDevice*> devices = ctx->getDevices();
 
-	size_t notes_output_mem_size = this->n_chunks * N_STAGES * 12 * sizeof(float);
+	size_t notes_output_mem_size = this->n_chunks * (N_STAGES - 1) * 12 * sizeof(float);
 	if (notes_output_mem && notes_output_mem->getSize() != notes_output_mem_size)
 	{
 		std::cout << "Resize output memory" << std::endl;
@@ -200,7 +200,7 @@ const float* MusicalFFT::readNotes(size_t* n_chunks, size_t* n_notes)
 
 	// Return output
 	if (n_chunks) *n_chunks = this->n_chunks;
-	if (n_notes) *n_notes = 12 * N_STAGES;
+	if (n_notes) *n_notes = 12 * (N_STAGES - 1);
 	return reinterpret_cast<const float*>(notes_output_mem->read(nullptr));
 }
 
