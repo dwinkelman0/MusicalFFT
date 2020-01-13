@@ -67,7 +67,7 @@ void NoteProfile::fromWav(const std::string& fname, const float a4_freq, const s
 	// over time; to aggregate over multiple channels, have another buffer
 	float* aggregation_buffer = nullptr;
 
-	// Keep track of how many chunks have been processed
+	// Keep track of how many notes have been processed
 	size_t chunk_index = 0;
 
 	while (1)
@@ -86,45 +86,47 @@ void NoteProfile::fromWav(const std::string& fname, const float a4_freq, const s
 		if (n_samples_read == 0) break;
 
 		// Perform the FFT and aggregate the data
+		size_t n_samples_to_process = n_samples_read + n_unused_samples;
+		size_t n_samples_processed = 0;
 		size_t n_new_chunks = 0;
-		
-		if (file.getNumChannels() == 1)
+		size_t n_new_notes = 0;
+
+		for (size_t channel_index = 0; channel_index < file.getNumChannels(); ++channel_index)
 		{
-			n_new_chunks = mfft.runFFT(file.getSampleRate(), n_unused_samples + n_samples_read, buffers[0], n_samples_per_chunk, base_note_freq);
+			std::cout << n_samples_to_process << std::endl;
+			// Perform the FFT
+			n_new_chunks = mfft.runFFT(file.getSampleRate(), n_samples_to_process, buffers[channel_index], n_samples_per_chunk, base_note_freq);
+			n_samples_processed = n_new_chunks * n_samples_per_chunk;
+			n_unused_samples = n_samples_to_process - n_samples_processed;
+			n_new_notes = n_new_chunks * n_notes_per_chunk;
+
+			// Create a buffer for aggregating the results from all channels
+			if (!aggregation_buffer)
+			{
+				aggregation_buffer = new float[n_new_notes];
+			}
+			if (channel_index == 0)
+			{
+				for (size_t i = 0; i < n_new_notes; ++i)
+				{
+					aggregation_buffer[i] = 0;
+				}
+			}
+
+			// Add the results to the buffer
 			const float* notes_output = mfft.readNotes(nullptr, nullptr);
-			memcpy(notes + chunk_index * n_notes_per_chunk, notes_output, n_new_chunks * n_notes_per_chunk * sizeof(float));
+			for (size_t i = 0; i < n_new_notes; ++i)
+			{
+				aggregation_buffer[i] += notes_output[i];
+			}
 		}
-		else
+
+		// Average the signal and copy into the output
+		for (size_t i = 0; i < n_new_notes; ++i)
 		{
-			for (size_t i = 0; i < file.getNumChannels(); ++i)
-			{
-				n_new_chunks = mfft.runFFT(file.getSampleRate(), n_unused_samples + n_samples_read, buffers[i], n_samples_per_chunk, base_note_freq);
-				if (!aggregation_buffer)
-				{
-					aggregation_buffer = new float[n_new_chunks * n_notes_per_chunk];
-				}
-				const float* notes_output = mfft.readNotes(nullptr, nullptr);
-				if (i == 0)
-				{
-					memcpy(aggregation_buffer, notes_output, n_new_chunks * n_notes_per_chunk * sizeof(float));
-				}
-				else
-				{
-					for (size_t index = 0; index < n_new_chunks * n_notes_per_chunk; ++index)
-					{
-						aggregation_buffer[index] += notes_output[index];
-					}
-				}
-			}
-
-			for (size_t index = 0; index < n_new_chunks * n_notes_per_chunk; ++index)
-			{
-				aggregation_buffer[index] /= file.getNumChannels();
-			}
-
-			// Copy the data into output
-			memcpy(notes + chunk_index * n_notes_per_chunk, aggregation_buffer, n_new_chunks * n_notes_per_chunk * sizeof(float));
+			aggregation_buffer[i] /= file.getNumChannels();
 		}
+		memcpy(notes + chunk_index * n_notes_per_chunk, aggregation_buffer, n_new_notes * sizeof(float));
 		chunk_index += n_new_chunks;
 	}
 

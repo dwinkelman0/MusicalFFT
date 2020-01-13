@@ -29,6 +29,11 @@ public:
 		return n_notes_per_chunk;
 	}
 
+	size_t getNumChunks() const
+	{
+		return n_chunks;
+	}
+
 	uint64_t getTimestampByIndex(const size_t index) const
 	{
 		if (!timestamps || index > n_chunks) return 0;
